@@ -6,6 +6,7 @@
 #include "linux_parser.h"
 
 using std::stof;
+using std::stol;
 using std::string;
 using std::to_string;
 using std::vector;
@@ -107,7 +108,40 @@ float LinuxParser::MemoryUtilization() {
 }
 
 // TODO: Read and return the system uptime
-long LinuxParser::UpTime() { return 0; }
+// long LinuxParser::UpTime() {
+//   string line;
+//   string time;
+//   string idle;
+//   long uptime = 0.0;
+//   std::ifstream filestream(kProcDirectory + kUptimeFilename);
+//   if (filestream.is_open()) {
+//     std::getline(filestream, line);
+//     std::istringstream linestream(line);
+//     linestream >> time >> idle;
+//     uptime = std::stol(time);
+//     return uptime;
+//   }
+//   return uptime;
+// }
+
+// Read and return the system uptime
+long LinuxParser::UpTime() { 
+  // get time running  
+  string line;
+  string kTime;
+  string kIdle;
+  long timespent = 0; 
+  std::ifstream stream(kProcDirectory + kUptimeFilename);
+  if (stream.is_open()) {
+    std::getline(stream, line);
+    std::istringstream linestream(line);
+    linestream >> kTime >> kIdle;
+    timespent = std::stol(kTime);
+  }
+  stream.close();
+  return timespent; 
+}
+
 
 // TODO: Read and return the number of jiffies for the system
 long LinuxParser::Jiffies() { return 0; }
@@ -127,12 +161,41 @@ vector<string> LinuxParser::CpuUtilization() { return {}; }
 
 // TODO: Read and return the total number of processes
 int LinuxParser::TotalProcesses() {
-  vector<int> pids = LinuxParser::Pids();
-  return pids.size();
+  string line;
+  string key;
+  int value = 0;
+  std::ifstream filestream(kProcDirectory + kStatFilename);
+  if (filestream.is_open()) {
+    while (std::getline(filestream, line)) {
+      std::istringstream linestream(line);
+      while (linestream >> key >> value) {
+        if (key == "processes") {
+          return value;
+        }
+      }
+    }
+  }
+  return value;
 }
 
 // TODO: Read and return the number of running processes
-int LinuxParser::RunningProcesses() { return 0; }
+int LinuxParser::RunningProcesses() { 
+  string line;
+  string key;
+  int value = 0;
+  std::ifstream filestream(kProcDirectory + kStatFilename);
+  if (filestream.is_open()) {
+    while (std::getline(filestream, line)) {
+      std::istringstream linestream(line);
+      while (linestream >> key >> value) {
+        if (key == "procs_running") {
+          return value;
+        }
+      }
+    }
+  }
+  return value;
+}
 
 // TODO: Read and return the command associated with a process
 // REMOVE: [[maybe_unused]] once you define the function
