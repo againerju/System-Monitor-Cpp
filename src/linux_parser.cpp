@@ -108,40 +108,21 @@ float LinuxParser::MemoryUtilization() {
 }
 
 // TODO: Read and return the system uptime
-// long LinuxParser::UpTime() {
-//   string line;
-//   string time;
-//   string idle;
-//   long uptime = 0.0;
-//   std::ifstream filestream(kProcDirectory + kUptimeFilename);
-//   if (filestream.is_open()) {
-//     std::getline(filestream, line);
-//     std::istringstream linestream(line);
-//     linestream >> time >> idle;
-//     uptime = std::stol(time);
-//     return uptime;
-//   }
-//   return uptime;
-// }
-
-// Read and return the system uptime
-long LinuxParser::UpTime() { 
-  // get time running  
+long LinuxParser::UpTime() {
   string line;
-  string kTime;
-  string kIdle;
-  long timespent = 0; 
-  std::ifstream stream(kProcDirectory + kUptimeFilename);
-  if (stream.is_open()) {
-    std::getline(stream, line);
+  string time;
+  string idle;
+  long uptime = 0.0;
+  std::ifstream filestream(kProcDirectory + kUptimeFilename);
+  if (filestream.is_open()) {
+    std::getline(filestream, line);
     std::istringstream linestream(line);
-    linestream >> kTime >> kIdle;
-    timespent = std::stol(kTime);
+    linestream >> time >> idle;
+    uptime = std::stol(time);
+    return uptime;
   }
-  stream.close();
-  return timespent; 
+  return uptime;
 }
-
 
 // TODO: Read and return the number of jiffies for the system
 long LinuxParser::Jiffies() { return 0; }
@@ -157,7 +138,25 @@ long LinuxParser::ActiveJiffies() { return 0; }
 long LinuxParser::IdleJiffies() { return 0; }
 
 // TODO: Read and return CPU utilization
-vector<string> LinuxParser::CpuUtilization() { return {}; }
+vector<string> LinuxParser::CpuUtilization() {
+  string line;
+  string key;
+  string user, nice, system, idle, iowait, irq, softirq, steal, guest, guest_nice;
+  vector<string> cpu_util;
+  std::ifstream filestream(kProcDirectory + kStatFilename);
+  if (filestream.is_open()) {
+    while (std::getline(filestream, line)) {
+      std::istringstream linestream(line);
+      while (linestream >> key) {
+        if (key == "cpu") {
+          linestream >> key >> user >> nice >> system >> idle >> iowait >> irq >> softirq >> steal >> guest >> guest_nice;
+          cpu_util = {user, nice, system, idle, iowait, irq, softirq, steal, guest, guest_nice};
+        }
+      }
+    }
+  }
+  return cpu_util;
+}
 
 // TODO: Read and return the total number of processes
 int LinuxParser::TotalProcesses() {
