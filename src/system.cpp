@@ -29,9 +29,10 @@ vector<Process>& System::Processes() {
     processes_ = {};
 
     for (const auto& p : pids)  {
-        processes_.push_back(Process(p));
+        processes_.emplace_back(Process(p));
     }
-    
+    // sort processes: max to min 
+    std::sort(processes_.begin(), processes_.end());  
     return processes_; 
 }
 

@@ -8,6 +8,7 @@
 
 using std::stof;
 using std::stol;
+using std::stoul;
 using std::string;
 using std::to_string;
 using std::vector;
@@ -200,11 +201,41 @@ int LinuxParser::RunningProcesses() {
 
 // TODO: Read and return the command associated with a process
 // REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Command(int pid[[maybe_unused]]) { return string(); }
+string LinuxParser::Command(int pid[[maybe_unused]]) {
+  string line;
+  string cmd;
+  std::ifstream filestream(kProcDirectory + std::to_string(pid) + kCmdlineFilename);
+  if (filestream.is_open()) {
+    while (std::getline(filestream, line, ' ')) {
+      std::replace(line.begin(), line.end(), '\n', ' ');
+      cmd += line;
+      cmd += " ";
+    }
+  }
+  return cmd;
+}
 
 // TODO: Read and return the memory used by a process
 // REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Ram(int pid[[maybe_unused]]) { return string(); }
+string LinuxParser::Ram(int pid[[maybe_unused]]) { 
+  string line;
+  string key;
+  string value;
+
+  std::ifstream filestream(kProcDirectory + std::to_string(pid) + kStatusFilename);
+  if (filestream.is_open()) {
+    while (std::getline(filestream, line)) {
+      std::replace(line.begin(), line.end(), ':', ' ');
+      std::istringstream linestream(line);
+      while (linestream >> key >> value) {
+        if (key == "VmSize") {
+          return value;
+        }
+      }
+    }
+  }
+  return value;
+}
 
 // TODO: Read and return the user ID associated with a process
 // REMOVE: [[maybe_unused]] once you define the function
@@ -263,4 +294,20 @@ string LinuxParser::User(int pid) {
 
 // TODO: Read and return the uptime of a process
 // REMOVE: [[maybe_unused]] once you define the function
-long LinuxParser::UpTime(int pid[[maybe_unused]]) { return 0; }
+long LinuxParser::UpTime(int pid) {
+  string elem;
+  long uptime = 0;
+  long int starttime;
+  float clk_ticks = float(sysconf(_SC_CLK_TCK));
+  std::ifstream filestream(LinuxParser::kProcDirectory + to_string(pid) + LinuxParser::kStatFilename);
+  vector<string> timers;
+  if (filestream.is_open()) {
+      while (std::getline(filestream, elem, ' ')) {
+          timers.push_back(elem);
+      }
+  }
+
+  starttime = std::stoul(timers[21]) / clk_ticks;
+  uptime = LinuxParser::UpTime() - (starttime); 
+  return uptime;
+}

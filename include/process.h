@@ -8,7 +8,7 @@ It contains relevant attributes as shown below
 */
 class Process {
  public:
-  Process(int p);                               // constructor
+  Process(int p);                          // constructor
   int Pid();                               // TODO: See src/process.cpp
   void SetPid(int p);
   std::string User();                      // TODO: See src/process.cpp
@@ -20,7 +20,8 @@ class Process {
 
   // TODO: Declare any necessary private members
  private:
- int pid_;
+    int pid_;
+    float cpu_usage_;
 };
 
 #endif
