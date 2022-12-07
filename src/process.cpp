@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <thread>
 
 #include "process.h"
 #include "linux_parser.h"
@@ -14,13 +15,13 @@ using std::stoul;
 using std::vector;
 using std::cout;
 
-// constructor
+// Constructor
 Process::Process(int p) {
     SetPid(p);
     Process::cpu_usage_ = Process::CpuUtilization();
 }
 
-// TODO: Return this process's ID
+// Return this process's ID
 int Process::Pid() {
     return Process::pid_;
 }
@@ -29,61 +30,70 @@ void Process::SetPid(int p) {
     Process::pid_ = p;
 }
 
-// TODO: Return this process's CPU utilization
+// Return this process's CPU utilization
 float Process::CpuUtilization() { 
-    string elem;
-    string key;
-    string value;
-    unsigned long int total_time;
-    unsigned long int seconds;
-    std::ifstream filestream(LinuxParser::kProcDirectory + to_string(Process::Pid()) + LinuxParser::kStatFilename);
-    vector<string> timers;
-    if (filestream.is_open()) {
-        while (std::getline(filestream, elem, ' ')) {
-            timers.push_back(elem);
+    
+    int pid = Pid();
+    string line, value;
+    std::vector<std::string> utilValues;
+    float utime, stime,cutime,starttime,cstime;
+
+    std::string path=LinuxParser::kProcDirectory +std::to_string(pid)+LinuxParser::kStatFilename;
+    std::ifstream stream(path);
+    int idx=0;
+
+    if (stream.is_open()) {
+        std::getline(stream,line);
+        std::istringstream linestream(line);
+
+        while(idx<22){
+            linestream>>value;
+            utilValues.push_back(value);
+            idx++;
         }
+        
+        utime=std::stof(utilValues[13]);
+        stime=std::stof(utilValues[14]);
+        cutime=std::stof(utilValues[15]);
+        cstime=std::stof(utilValues[16]);
+        starttime=std::stof(utilValues[21]);
+        double hertz=sysconf(_SC_CLK_TCK);
+        int numCpus=std::thread::hardware_concurrency();
+        double uptime=numCpus*LinuxParser::UpTime();
+
+        float total_time = utime + stime;
+        total_time = total_time + cutime + cstime;
+
+        float seconds = uptime - (starttime / hertz);
+        return   ((total_time / hertz) / seconds);
+
     }
-    unsigned long int utime = std::stoul(timers[13]);
-    unsigned long int stime = std::stoul(timers[14]);
-    total_time = utime + stime;
 
-    unsigned long int cutime = std::stoul(timers[15]);
-    unsigned long int cstime = std::stoul(timers[16]);
-    total_time = total_time + cutime + cstime;
-
-    unsigned long int hertz = sysconf(_SC_CLK_TCK);
-    unsigned long int starttime = std::stoul(timers[21]);
-    seconds = LinuxParser::UpTime(Process::Pid()) - (starttime / hertz);
-
-    float cpu_usage;
-    cpu_usage = (total_time / hertz) / seconds;
-
-    return cpu_usage;
+    return 0;
 }
 
-// TODO: Return the command that generated this process
+// Return the command that generated this process
 string Process::Command() {
     return LinuxParser::Command(Process::Pid());
 }
 
-// TODO: Return this process's memory utilization
+// Return this process's memory utilization
 string Process::Ram() {     
     string ram = LinuxParser::Ram(Process::Pid());
         return std::to_string(int(std::stoi(ram) / 1024.));
     }
 
-// TODO: Return the user (name) that generated this process
+// Return the user (name) that generated this process
 string Process::User() {
     return LinuxParser::User(Process::Pid());
 }
 
-// TODO: Return the age of this process (in seconds)
+// Return the age of this process (in seconds)
 long int Process::UpTime() {
     return LinuxParser::UpTime(Process::Pid());
 }
 
-// TODO: Overload the "less than" comparison operator for Process objects
-// REMOVE: [[maybe_unused]] once you define the function
+// Overload the "less than" comparison operator for Process objects
 bool Process::operator<(Process const& a) const {
   // sort by cpu usage => greater than 
   return (cpu_usage_ > a.cpu_usage_) ; 

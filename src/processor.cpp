@@ -1,6 +1,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <thread>
 
 #include "processor.h"
 #include "linux_parser.h"
@@ -10,22 +11,22 @@ using std::vector;
 using std::stoi;
 using std::cout;
 
-// TODO: Return the aggregate CPU utilization
+// Return the aggregate CPU utilization
 float Processor::Utilization() { 
-    vector<string> cpu_util = LinuxParser::CpuUtilization();
-    int user = std::stoi(cpu_util[0]);
-    int nice = std::stoi(cpu_util[1]);
-    int system = std::stoi(cpu_util[2]);
-    int idle = std::stoi(cpu_util[3]);
-    int iowait = std::stoi(cpu_util[4]);
-    int irq = std::stoi(cpu_util[5]);
-    int softirq = std::stoi(cpu_util[6]);
-    int steal = std::stoi(cpu_util[7]);
-         
-    float Idle = idle + iowait;
-    float NonIdle = user + nice + system + irq + softirq + steal;
-    float Total = Idle + NonIdle;
-    float Util = NonIdle / Total;
 
-    return Util;
+    // get number of cpu cores
+    int numCpus = std::thread::hardware_concurrency();
+
+    // read the uptime file
+    std::string line, uptime, idletime; 
+    std::ifstream stream(LinuxParser::kProcDirectory + LinuxParser::kUptimeFilename); 
+    if (stream.is_open()) { 
+        std::getline(stream, line); 
+        std::istringstream linestream(line); 
+        linestream >> uptime >> idletime; 
+    }
+
+    // compute the utilization
+    float utilTime= (numCpus*std::stol(uptime) - std::stol(idletime)); 
+    return utilTime/(numCpus*std::stol(uptime));
 }
